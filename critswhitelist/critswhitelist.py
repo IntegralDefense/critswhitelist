@@ -5,7 +5,7 @@ import re
 from urllib.parse import urlsplit
 from tld import get_tld
 from critsapi.critsdbapi import CRITsDBAPI
-from urltools import is_valid
+from urlfinderlib import is_valid
 
 
 class CritsWhitelist:
