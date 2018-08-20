@@ -1,3 +1,3 @@
 tld==0.9
 git+https://github.com/lolnate/critsapi.git
-git+https://github.com/IntegralDefense/urltools.git
+git+https://github.com/IntegralDefense/urlfinderlib.git
