@@ -373,7 +373,7 @@ class CritsWhitelist:
         # Finally check the entire URL.
         return self._is_whitelisted(u, ['URI - URL'], value_in_indicator=value_in_indicator, indicator_in_value=indicator_in_value)
 
-    def is_uri_path_whitelisted(self, path, relationships=None, value_in_indicator=True, indicator_in_value=True):
+    def is_uri_path_whitelisted(self, path, relationships=[], value_in_indicator=True, indicator_in_value=True):
         """ Returns True if the URI path is whitelisted. """
 
         # First check if the path was already cached.
@@ -383,39 +383,40 @@ class CritsWhitelist:
             return False
 
         # Check if any of the relationships (if we were given any) are whitelisted.
-        if relationships:
-            for r in relationships:
-                # Check if the relationship is a full URL by using urlsplit. If there is no
-                # netloc attribute, then it is either an IP or a domain, not a full URL.
-                split = urlsplit(r)
-                if not split.netloc:
-                    # Check if the relationship is a URL shortener service.
-                    if r.lower() in self.url_shorteners:
-                        self._add_whitelisted_cache(path)
-                        self.logger.debug('{} URI - Path whitelisted because of relationship to URL shortener domain: {}'.format(path, r))
-                        return True
+        for r in relationships:
 
-                    # Check if the relationship is an IP address.
-                    try:
-                        ipaddress.ip_address(r)
-                        # If the IP is whitelisted, we should whitelist that path.
-                        if self.is_ip_whitelisted(r):
-                            self._add_whitelisted_cache(path)
-                            self.logger.debug('{} URI - Path whitelisted because of relationship to IP address: {}'.format(path, r))
-                            return True
-                    # If we got an exception, it must be a domain name.
-                    except:
-                        # If the domain is whitelisted, we should whitelist the path.
-                        if self.is_domain_whitelisted(r):
-                            self._add_whitelisted_cache(path)
-                            self.logger.debug('{} URI - Path whitelisted because of relationship to domain: {}'.format(path, r))
-                            return True
-                # Otherwise it must be a full URL.
-                else:
-                    if self.is_url_whitelisted(r):
+            # Check if the relationship is in the URL shorteners list.
+            if r in self.url_shorteners:
+                self._add_whitelisted_cache(path)
+                self.logger.debug('{} URI - Path whitelisted because of relationship to URL shortener domain: {}'.format(path, r))
+                return True
+
+            # Check if the relationship is a full URL by using urlsplit. If there is no
+            # netloc attribute, then it is either an IP or a domain, not a full URL.
+            split = urlsplit(r)
+            if not split.netloc:
+
+                # Check if the relationship is an IP address.
+                try:
+                    ipaddress.ip_address(r)
+                    # If the IP is whitelisted, we should whitelist that path.
+                    if self.is_ip_whitelisted(r):
                         self._add_whitelisted_cache(path)
-                        self.logger.debug('{} URI - Path whitelisted because of relationship to URL: {}'.format(path, r))
+                        self.logger.debug('{} URI - Path whitelisted because of relationship to IP address: {}'.format(path, r))
                         return True
+                # If we got an exception, it must be a domain name.
+                except:
+                    # If the domain is whitelisted, we should whitelist the path.
+                    if self.is_domain_whitelisted(r):
+                        self._add_whitelisted_cache(path)
+                        self.logger.debug('{} URI - Path whitelisted because of relationship to domain: {}'.format(path, r))
+                        return True
+            # Otherwise it must be a full URL.
+            else:
+                if self.is_url_whitelisted(r):
+                    self._add_whitelisted_cache(path)
+                    self.logger.debug('{} URI - Path whitelisted because of relationship to URL: {}'.format(path, r))
+                    return True
 
         return self._is_whitelisted(path, ['URI - Path'], value_in_indicator=value_in_indicator, indicator_in_value=indicator_in_value)
 
