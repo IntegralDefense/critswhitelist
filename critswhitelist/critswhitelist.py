@@ -3,19 +3,16 @@ import logging
 import os
 import re
 from urllib.parse import urlsplit
-from tld import get_tld
 from critsapi.critsdbapi import CRITsDBAPI
 from urlfinderlib import is_valid
 
 
 class CritsWhitelist:
-    def __init__(self, whitelist_tags, mongo_connection=None, mongo_uri=None, mongo_db=None, urlshortener_tags=[]):
+    def __init__(self, whitelist_tags, mongo_connection=None, mongo_uri=None, mongo_db=None):
         """ Initiates the CRITS whitelist system. You must either supply a connected CRITsDBAPI object or your
             Mongo URI and the Mongo database name in order to create a new CRITsDBAPI object.
 
             whitelist_tags: A list of tags/bucket list items from Deprecated CRITS indicators you want included in your whitelist.
-            urlshortener_tags: A list of tags/bucket list items from CRITS indicators that denote URL shortener domains.
-                               This can be left blank to disable this functionality.
             mongo_connection: A connected CRITsDBAPI object (see https://github.com/lolnate/critsapi for details)
             mongo_uri: The URI to your instance of Mongo (ex: mongodb://server.com/27017/)
             mongo_db: The CRITS database name in your instance of Mongo
@@ -34,16 +31,7 @@ class CritsWhitelist:
         self.cache_whitelisted = []
         self.cache_nonwhitelisted = []
 
-        # Set up the list of URL shortener services.
-        self.url_shorteners = []
-
         try:
-            if urlshortener_tags:
-                # Search for the URL shortener services with raw mongo because the API is slow.
-                crits_result = list(mongo_connection.find('indicators', {'status': 'Deprecated', 'type': 'URI - Domain Name', 'bucket_list': {'$in': urlshortener_tags}}))
-                for r in crits_result:
-                    self.url_shorteners.append(r['value'].lower())
-
             # Search for the whitelisted indicators with raw mongo because the API is slow.
             crits_result = list(mongo_connection.find('indicators', {'status': 'Deprecated', 'bucket_list': {'$in': whitelist_tags}}))
             for r in crits_result:
@@ -56,19 +44,6 @@ class CritsWhitelist:
                         self.whitelist[r['type']].append(ipaddress.ip_network(r['value'], strict=False))
                     except:
                         pass
-                # If this indicator is a "URI - Domain Name", check if we need to add its TLD.
-                # Ex: if 'www.google.com' is in whitelist, 'google.com' should also be whitelisted.
-                elif r['type'] == 'URI - Domain Name':
-                    self.whitelist[r['type']].append(r['value'])
-                    """
-                    try:
-                        tld = get_tld(r['value'], fail_silently=True, fix_protocol=True, as_object=True)
-                        if tld.fld and not tld.fld.lower() == r['value'].lower():
-                            self.whitelist[r['type']].append(tld.fld)
-                            self.logger.debug('Added {} domain to whitelist because of whitelisted domain {}'.format(tld.fld, r['value']))
-                    except:
-                        pass
-                    """
                 # Otherwise just add the value to the whitelist.
                 else:
                     self.whitelist[r['type']].append(r['value'])
@@ -381,12 +356,6 @@ class CritsWhitelist:
             return True
         if self._is_cached_nonwhitelisted(path):
             return False
-
-        # Check if any of the relationships are URL shortener services.
-        if any(r.lower() in self.url_shorteners for r in relationships):
-            self._add_whitelisted_cache(path)
-            self.logger.debug('{} URI - Path whitelisted because of relationship to URL shortener domain.'.format(path))
-            return True
 
         # Check if any of the relationships (if we were given any) are whitelisted.
         for r in relationships:
