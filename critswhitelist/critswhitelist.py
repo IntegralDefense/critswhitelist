@@ -382,14 +382,14 @@ class CritsWhitelist:
         if self._is_cached_nonwhitelisted(path):
             return False
 
+        # Check if any of the relationships are URL shortener services.
+        if any(r.lower() in self.url_shorteners for r in relationships):
+            self._add_whitelisted_cache(path)
+            self.logger.debug('{} URI - Path whitelisted because of relationship to URL shortener domain.'.format(path))
+            return True
+
         # Check if any of the relationships (if we were given any) are whitelisted.
         for r in relationships:
-
-            # Check if the relationship is in the URL shorteners list.
-            if r in self.url_shorteners:
-                self._add_whitelisted_cache(path)
-                self.logger.debug('{} URI - Path whitelisted because of relationship to URL shortener domain: {}'.format(path, r))
-                return True
 
             # Check if the relationship is a full URL by using urlsplit. If there is no
             # netloc attribute, then it is either an IP or a domain, not a full URL.
