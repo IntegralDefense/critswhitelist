@@ -11,7 +11,6 @@ Python library that interacts with CRITS to build an indicator whitelist system.
     mongo_connection: Required if NOT supplying mongo_uri and mongo_db.
     mongo_uri: Required if NOT supplying mongo_connection.
     mongo_db: Required if NOT supplying mongo_connection.
-    urlshortener_tags: Optional.
     
 ## Example Usage
 If you already have a CRITsDBAPI object elsewhere in your code, creating a CritsWhitelist object will look something like this:
@@ -21,13 +20,13 @@ If you already have a CRITsDBAPI object elsewhere in your code, creating a Crits
     mongo_connection = CRITsDBAPI(mongo_uri=mongo_uri, db_name=mongo_db)
     mongo_connection.connect()
 
-    w = CritsWhitelist(['whitelist:e2w'], mongo_connection=mongo_connection, urlshortener_tags=['urlshortener:e2w'])
+    w = CritsWhitelist(['whitelist:e2w'], mongo_connection=mongo_connection)
     
 If you do not already have a CRITsDBAPI object, the CritsWhitelist class can create one for you:
 
     from critswhitelist import CritsWhitelist
 
-    w = CritsWhitelist(['whitelist:e2w'], mongo_uri='mongodb://your.crits.server:27017/', mongo_db='crits', urlshortener_tags=['urlshortener:e2w'])
+    w = CritsWhitelist(['whitelist:e2w'], mongo_uri='mongodb://your.crits.server:27017/', mongo_db='crits')
     
 ## Functionality
 When you create the CritsWhitelist object, you must specify the "whitelist_tags" attribute. This is a list of tags you want include when searching the Deprecated indicators in CRITS to build the whitelist.
@@ -150,12 +149,6 @@ Example: If ".css" is whitelisted, then:
 Example: If "/social/signin/" is whitelisted, then:
 
 * "/social" is whitelisted.
-
-If you specified the "urlshortener_tags" parameter when creating the CritsWhitelist object, the following is an example of its intended functionality:
-
-* If "goo.gl" is one of the Deprecated indicators tagged with one of your "urlshortener_tags", then:
-    * The URL "http://goo.gl/aE81b" will NOT be whitelisted. However,
-    * The URI path "/aE81b" will be whitelisted if "goo.gl" is listed as one of the relationships. The idea behind this is that URL shorteners use very short URI paths, which are commonly found as random base64 strings inside e-mails or other documents.
 
 **is_domain_whitelisted(domain, value_in_indicator=False, indicator_in_value=True)**
 
